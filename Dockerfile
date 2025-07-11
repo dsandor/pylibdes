@@ -1,0 +1,33 @@
+# Multi-stage build to compile DES binary and layer it on AWS Lambda base image
+FROM python:3.13-slim AS builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    make \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the C source code
+COPY c_code/ /tmp/c_code/
+
+# Build the DES binary
+WORKDIR /tmp/c_code
+RUN make gcc
+
+# Second stage: Use AWS Lambda base image and add the DES binary
+FROM public.ecr.aws/lambda/python:3.13
+
+# Copy the compiled DES binary from the builder stage
+COPY --from=builder /tmp/c_code/des /var/task/des
+
+# Copy the Python Lambda handler
+COPY lambda_function.py /var/task/
+
+# Make the binary executable
+RUN chmod +x /var/task/des
+
+# Set the working directory to the Lambda task root
+WORKDIR /var/task
+
+# The AWS Lambda base image already has the correct entrypoint
+# No need to override it as it's already set to /lambda-entrypoint.sh 

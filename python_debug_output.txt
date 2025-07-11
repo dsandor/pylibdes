@@ -1,0 +1,50 @@
+Generated Subkeys (Python):
+  Subkey 1: L=0x94dc60e8, R=0x94982ca
+  Subkey 2: L=0x807864e0, R=0x41c942c5
+  Subkey 3: L=0x2c8c6464, R=0xf0904c7
+  Subkey 4: L=0xd8d05c60, R=0xcc0b0483
+  Subkey 5: L=0xc47c4c28, R=0x4b830c8c
+  Subkey 6: L=0x1c80cc28, R=0xc342450d
+  Subkey 7: L=0xace40c2c, R=0x8cc64702
+  Subkey 8: L=0xf054381c, R=0xc3864500
+  Subkey 9: L=0xd4ac181c, R=0x46c64d41
+  Subkey 10: L=0xb430985c, R=0x8904490b
+  Subkey 11: L=0x4824901c, R=0xcdc5cb06
+  Subkey 12: L=0x7cd8b094, R=0x44848b08
+  Subkey 13: L=0x8470b490, R=0x864c8a4f
+  Subkey 14: L=0x6098a0d0, R=0x8bc88ec6
+  Subkey 15: L=0xe884e8c0, R=0x448982cd
+  Subkey 16: L=0xb8b8e0c0, R=0x8e8982c8
+PYTHON_DEBUG: Round 1, L=0x8d1c4292, R=0x59324df8, u_val=0xe18aad38, t_val=0xd7bbcf30, f_result=0x3f133c32
+PYTHON_DEBUG: Round 2, L=0x59324df8, R=0x862f49a2, u_val=0x6eaba162, t_val=0xc2a6cb6f, f_result=0xb330b30
+PYTHON_DEBUG: Round 3, L=0x862f49a2, R=0x6d2745eb, u_val=0xdbfe53b, t_val=0xe6efcb2d, f_result=0x34150813
+PYTHON_DEBUG: Round 4, L=0x6d2745eb, R=0xa12270b8, u_val=0x2552c428, t_val=0x276efaf7, f_result=0x270d391a
+PYTHON_DEBUG: Round 5, L=0xa12270b8, R=0x742a69f2, u_val=0x8f2d966, t_val=0x30aee2fa, f_result=0x190d2c19
+PYTHON_DEBUG: Round 6, L=0x742a69f2, R=0x95214ebe, u_val=0xdd05dea2, t_val=0x58e485b8, f_result=0x34033e06
+PYTHON_DEBUG: Round 7, L=0x95214ebe, R=0x7b0247e8, u_val=0xcf32dfb4, t_val=0xf2060ee3, f_result=0xf282e1a
+PYTHON_DEBUG: Round 8, L=0x7b0247e8, R=0xba257b90, u_val=0x6e89638c, t_val=0xfce336d1, f_result=0x2f04352e
+PYTHON_DEBUG: Round 9, L=0xba257b90, R=0x6d3275f8, u_val=0x9d664de4, t_val=0xaeb430f8, f_result=0x16303210
+PYTHON_DEBUG: Round 10, L=0x6d3275f8, R=0xa11c67aa, u_val=0xdf86b86, t_val=0x2dda20a8, f_result=0x1b391c3a
+PYTHON_DEBUG: Round 11, L=0xa11c67aa, R=0x7c3776c8, u_val=0x60b7bae0, t_val=0xbf7533c5, f_result=0x11050330
+PYTHON_DEBUG: Round 12, L=0x7c3776c8, R=0xb71b69b5, u_val=0x7367259d, t_val=0xfc986539, f_result=0x16070e1f
+PYTHON_DEBUG: Round 13, L=0xb71b69b5, R=0x6b3547cb, u_val=0xb3e51bab, t_val=0xa73e4348, f_result=0x17023103
+PYTHON_DEBUG: Round 14, L=0x6b3547cb, R=0xb7007886, u_val=0x9b8c1ce2, t_val=0xb8097c41, f_result=0x1b1133
+PYTHON_DEBUG: Round 15, L=0xb7007886, R=0x55246ee9, u_val=0xd55c0a09, t_val=0x14ed2c2c, f_result=0x3e112922
+PYTHON_DEBUG: Round 16, L=0x55246ee9, R=0x8d274f88, u_val=0x19fb2f60, t_val=0x846ecd42, f_result=0x3a27370e
+PYTHON_DEBUG: Round 1, L=0xe0d7301b, R=0x3296027a, u_val=0x8a2ee2ba, t_val=0xbc1f80b2, f_result=0x10301327
+PYTHON_DEBUG: Round 2, L=0x3296027a, R=0xc9f22936, u_val=0x2176c1f6, t_val=0x8d7babfb, f_result=0x2925192d
+PYTHON_DEBUG: Round 3, L=0xc9f22936, R=0x1ca33d5e, u_val=0x7c3b9d8e, t_val=0x976bb398, f_result=0x2e353f24
+PYTHON_DEBUG: Round 4, L=0x1ca33d5e, R=0xeec22e04, u_val=0x6ab29a94, t_val=0x688ea44b, f_result=0x27300732
+PYTHON_DEBUG: Round 5, L=0xeec22e04, R=0x1a89227b, u_val=0x665192ef, t_val=0x5e0da973, f_result=0x62a1f25
+PYTHON_DEBUG: Round 6, L=0x1a89227b, R=0xccd73b15, u_val=0x84f3ab09, t_val=0x112f013, f_result=0x22151511
+PYTHON_DEBUG: Round 7, L=0xccd73b15, R=0xfa10e6c, u_val=0xbb919630, t_val=0x86a54767, f_result=0x15282c17
+PYTHON_DEBUG: Round 8, L=0xfa10e6c, R=0xd6cf2d1a, u_val=0x2633506, t_val=0x9009605b, f_result=0x1a18160f
+PYTHON_DEBUG: Round 9, L=0xd6cf2d1a, R=0x16b23360, u_val=0xe6e60b7c, t_val=0xd5347660, f_result=0x19133d0c
+PYTHON_DEBUG: Round 10, L=0x16b23360, R=0xeac50b3d, u_val=0x46210711, t_val=0x66034c3f, f_result=0x3c0a2627
+PYTHON_DEBUG: Round 11, L=0xeac50b3d, R=0x19932265, u_val=0x513ee4d, t_val=0xdad16768, f_result=0xf211105
+PYTHON_DEBUG: Round 12, L=0x19932265, R=0xedfa3608, u_val=0x29867a20, t_val=0xa6793a84, f_result=0x73f3d35
+PYTHON_DEBUG: Round 13, L=0xedfa3608, R=0x10962551, u_val=0xc8467931, t_val=0xdc9d21d2, f_result=0x9050734
+PYTHON_DEBUG: Round 14, L=0x10962551, R=0xead2292d, u_val=0xc65e4d49, t_val=0xe5db2dea, f_result=0x7281f25
+PYTHON_DEBUG: Round 15, L=0xead2292d, R=0x870b7c, u_val=0x80ff6f9c, t_val=0x414e49b9, f_result=0x10112e2d
+PYTHON_DEBUG: Round 16, L=0x870b7c, R=0xf5ec3d13, u_val=0x61305dfb, t_val=0xfca5bfd9, f_result=0x1f3e143e
+File '/Users/dsandor/Projects/libdes/github/pylibdes/single_block_input.enc' decrypted to '/Users/dsandor/Projects/libdes/github/pylibdes/single_block_output.txt' successfully.
