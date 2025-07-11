@@ -7,6 +7,7 @@ def main():
     parser.add_argument("-k", "--key", required=True, help="8-byte DES key.")
     parser.add_argument("encrypted_filename", help="Path to the encrypted input file.")
     parser.add_argument("decrypted_filename", help="Path to the output file for decrypted content.")
+    parser.add_argument("--no-padding", action="store_true", help="Do not remove padding after decryption. Use if the encrypted file was not padded or uses a different padding scheme.")
 
     args = parser.parse_args()
 
@@ -24,24 +25,27 @@ def main():
         print(f"Error reading encrypted file: {e}", file=sys.stderr)
         sys.exit(1)
 
-    # Convert bytes to string for DES class (assuming ASCII or similar for key and data)
-    # The des.py script expects string input for _string_to_bits
-    # For binary data, we need to handle it carefully.
-    # The current des.py implementation converts string to bits, then bits to string.
-    # It's designed for text. For arbitrary binary data, we need to ensure
-    # the byte values are preserved through the string conversion.
-    # A simple way is to use latin-1 encoding which maps byte values directly to unicode codepoints 0-255.
-    
     try:
-        des = DES(args.key.encode('latin-1').decode('latin-1')) # Key as string
+        des = DES(args.key.encode('latin-1').decode('latin-1'))
         
-        # Decrypt in chunks if file is large, or all at once if small.
-        # The des.py decrypt_ecb expects a string.
-        # We need to convert the bytes read from file to a string that can be
-        # converted back to bytes without loss. latin-1 is suitable for this.
         encrypted_str = encrypted_data.decode('latin-1')
         decrypted_str = des.decrypt_ecb(encrypted_str)
-        decrypted_data = decrypted_str.encode('latin-1')
+
+        if args.no_padding:
+            # If no_padding is specified, return the raw decrypted string as bytes
+            decrypted_data = decrypted_str.encode('latin-1')
+        else:
+            # Otherwise, attempt to remove padding as per des.py's decrypt_ecb logic
+            # The decrypt_ecb method already handles padding removal internally.
+            # We just need to ensure the output is converted back to bytes.
+            padding_len = ord(decrypted_str[-1])
+            if 0 < padding_len <= 8:
+                decrypted_data = decrypted_str[:-padding_len].encode('latin-1')
+            else:
+                # If padding_len is suspicious, it might indicate no padding or corrupt padding.
+                # In this case, we'll just return the raw decrypted data and let the user decide.
+                print("Warning: Padding length seems invalid. Returning raw decrypted data.", file=sys.stderr)
+                decrypted_data = decrypted_str.encode('latin-1')
 
         with open(args.decrypted_filename, 'wb') as f_out:
             f_out.write(decrypted_data)
