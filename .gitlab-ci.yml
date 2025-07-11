@@ -1,0 +1,251 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  AWS_DEFAULT_REGION: us-east-1
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+
+# Cache Docker layers for faster builds
+cache:
+  paths:
+    - .cache/
+
+before_script:
+  - echo "Setting up AWS credentials and Docker buildx..."
+
+build:
+  stage: build
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_VERIFY: 1
+    DOCKER_CERT_PATH: "$CI_PROJECT_DIR/.certs"
+  script:
+    # Install required tools
+    - apk add --no-cache aws-cli curl jq
+    
+    # Setup Docker buildx
+    - docker buildx create --use --name multiarch-builder || true
+    - docker buildx inspect --bootstrap
+    
+    # Get AWS account ID
+    - export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+    - echo "AWS Account ID: $AWS_ACCOUNT_ID"
+    
+    # Set ECR repository URI
+    - export ECR_REPO_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+    - export ECR_REPO_NAME="${CI_PROJECT_NAME}-${CI_ENVIRONMENT_NAME:-dev}"
+    - export IMAGE_TAG="${CI_COMMIT_SHA:0:8}"
+    - export IMAGE_URI="${ECR_REPO_URI}/${ECR_REPO_NAME}:${IMAGE_TAG}"
+    - export LATEST_URI="${ECR_REPO_URI}/${ECR_REPO_NAME}:latest"
+    
+    # Login to ECR
+    - aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_REPO_URI}
+    
+    # Build and push multi-architecture image
+    - echo "Building Docker image: ${IMAGE_URI}"
+    - docker buildx build 
+        --platform linux/amd64,linux/arm64 
+        --tag ${IMAGE_URI} 
+        --tag ${LATEST_URI} 
+        --push 
+        --cache-from type=local,src=.cache 
+        --cache-to type=local,dest=.cache,mode=max 
+        .
+    
+    # Save image information for deployment
+    - echo "IMAGE_URI=${IMAGE_URI}" > build.env
+    - echo "ECR_REPO_NAME=${ECR_REPO_NAME}" >> build.env
+    - echo "IMAGE_TAG=${IMAGE_TAG}" >> build.env
+    - echo "ECR_REPO_URI=${ECR_REPO_URI}" >> build.env
+    
+    # Output build information
+    - echo "✅ Docker image built and pushed successfully"
+    - echo "Image URI: ${IMAGE_URI}"
+    - echo "Latest URI: ${LATEST_URI}"
+    - echo "ECR Repository: ${ECR_REPO_NAME}"
+  
+  artifacts:
+    reports:
+      dotenv: build.env
+    paths:
+      - build.env
+    expire_in: 1 hour
+  
+  only:
+    - main
+    - develop
+    - merge_requests
+
+deploy:
+  stage: deploy
+  image: amazon/aws-cli:2.11.0
+  dependencies:
+    - build
+  variables:
+    STACK_NAME: "${CI_PROJECT_NAME}-${CI_ENVIRONMENT_NAME:-dev}"
+    S3_BUCKET_NAME: "${CI_PROJECT_NAME}-${CI_ENVIRONMENT_NAME:-dev}-${CI_COMMIT_SHA:0:8}"
+  script:
+    # Install additional tools
+    - yum install -y jq
+    
+    # Load build variables
+    - source build.env
+    
+    # Validate CloudFormation template
+    - echo "Validating CloudFormation template..."
+    - aws cloudformation validate-template --template-body file://cloudformation.yaml
+    
+    # Deploy CloudFormation stack
+    - echo "Deploying CloudFormation stack: ${STACK_NAME}"
+    - aws cloudformation deploy
+        --template-file cloudformation.yaml
+        --stack-name ${STACK_NAME}
+        --parameter-overrides
+          ProjectName=${CI_PROJECT_NAME}
+          Environment=${CI_ENVIRONMENT_NAME:-dev}
+          ECRRepositoryName=${ECR_REPO_NAME}
+          ECRImageTag=${IMAGE_TAG}
+          S3BucketName=${S3_BUCKET_NAME}
+        --capabilities CAPABILITY_NAMED_IAM
+        --no-fail-on-empty-changeset
+    
+    # Wait for stack to complete
+    - echo "Waiting for stack deployment to complete..."
+    - aws cloudformation wait stack-update-complete --stack-name ${STACK_NAME} || aws cloudformation wait stack-create-complete --stack-name ${STACK_NAME}
+    
+    # Get stack outputs
+    - echo "Getting stack outputs..."
+    - aws cloudformation describe-stacks --stack-name ${STACK_NAME} --query 'Stacks[0].Outputs' --output json > stack-outputs.json
+    
+    # Display deployment information
+    - echo "✅ CloudFormation stack deployed successfully"
+    - echo "Stack Name: ${STACK_NAME}"
+    - echo "S3 Bucket: ${S3_BUCKET_NAME}"
+    - echo "ECR Repository: ${ECR_REPO_NAME}"
+    - echo "Lambda Function: ${CI_PROJECT_NAME}-${CI_ENVIRONMENT_NAME:-dev}-des-decrypt"
+    - echo ""
+    - echo "Stack Outputs:"
+    - cat stack-outputs.json | jq -r '.[] | "\(.OutputKey): \(.OutputValue)"'
+    
+    # Save deployment information
+    - echo "DEPLOYMENT_INFO<<EOF" >> deploy.env
+    - echo "Stack Name: ${STACK_NAME}" >> deploy.env
+    - echo "S3 Bucket: ${S3_BUCKET_NAME}" >> deploy.env
+    - echo "ECR Repository: ${ECR_REPO_NAME}" >> deploy.env
+    - echo "Image Tag: ${IMAGE_TAG}" >> deploy.env
+    - echo "Lambda Function: ${CI_PROJECT_NAME}-${CI_ENVIRONMENT_NAME:-dev}-des-decrypt" >> deploy.env
+    - echo "EOF" >> deploy.env
+  
+  artifacts:
+    reports:
+      dotenv: deploy.env
+    paths:
+      - stack-outputs.json
+      - deploy.env
+    expire_in: 1 week
+  
+  environment:
+    name: $CI_ENVIRONMENT_NAME
+    url: https://console.aws.amazon.com/cloudformation/home?region=${AWS_DEFAULT_REGION}#/stacks/stackinfo?stackId=${STACK_NAME}
+  
+  only:
+    - main
+    - develop
+
+# Manual deployment job for other environments
+deploy-manual:
+  stage: deploy
+  image: amazon/aws-cli:2.11.0
+  dependencies:
+    - build
+  variables:
+    STACK_NAME: "${CI_PROJECT_NAME}-${CI_ENVIRONMENT_NAME}"
+    S3_BUCKET_NAME: "${CI_PROJECT_NAME}-${CI_ENVIRONMENT_NAME}-${CI_COMMIT_SHA:0:8}"
+  script:
+    # Install additional tools
+    - yum install -y jq
+    
+    # Load build variables
+    - source build.env
+    
+    # Validate CloudFormation template
+    - echo "Validating CloudFormation template..."
+    - aws cloudformation validate-template --template-body file://cloudformation.yaml
+    
+    # Deploy CloudFormation stack
+    - echo "Deploying CloudFormation stack: ${STACK_NAME}"
+    - aws cloudformation deploy
+        --template-file cloudformation.yaml
+        --stack-name ${STACK_NAME}
+        --parameter-overrides
+          ProjectName=${CI_PROJECT_NAME}
+          Environment=${CI_ENVIRONMENT_NAME}
+          ECRRepositoryName=${ECR_REPO_NAME}
+          ECRImageTag=${IMAGE_TAG}
+          S3BucketName=${S3_BUCKET_NAME}
+        --capabilities CAPABILITY_NAMED_IAM
+        --no-fail-on-empty-changeset
+    
+    # Wait for stack to complete
+    - echo "Waiting for stack deployment to complete..."
+    - aws cloudformation wait stack-update-complete --stack-name ${STACK_NAME} || aws cloudformation wait stack-create-complete --stack-name ${STACK_NAME}
+    
+    # Get stack outputs
+    - echo "Getting stack outputs..."
+    - aws cloudformation describe-stacks --stack-name ${STACK_NAME} --query 'Stacks[0].Outputs' --output json > stack-outputs.json
+    
+    # Display deployment information
+    - echo "✅ CloudFormation stack deployed successfully"
+    - echo "Stack Name: ${STACK_NAME}"
+    - echo "S3 Bucket: ${S3_BUCKET_NAME}"
+    - echo "ECR Repository: ${ECR_REPO_NAME}"
+    - echo "Lambda Function: ${CI_PROJECT_NAME}-${CI_ENVIRONMENT_NAME}-des-decrypt"
+    - echo ""
+    - echo "Stack Outputs:"
+    - cat stack-outputs.json | jq -r '.[] | "\(.OutputKey): \(.OutputValue)"'
+  
+  artifacts:
+    paths:
+      - stack-outputs.json
+    expire_in: 1 week
+  
+  environment:
+    name: $CI_ENVIRONMENT_NAME
+    url: https://console.aws.amazon.com/cloudformation/home?region=${AWS_DEFAULT_REGION}#/stacks/stackinfo?stackId=${STACK_NAME}
+  
+  when: manual
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# Cleanup job to remove old images
+cleanup:
+  stage: .post
+  image: amazon/aws-cli:2.11.0
+  script:
+    # Install additional tools
+    - yum install -y jq
+    
+    # Load build variables if available
+    - source build.env 2>/dev/null || true
+    
+    # Set ECR repository name
+    - export ECR_REPO_NAME="${CI_PROJECT_NAME}-${CI_ENVIRONMENT_NAME:-dev}"
+    
+    # List and delete old images (keep last 10)
+    - echo "Cleaning up old ECR images..."
+    - aws ecr describe-images --repository-name ${ECR_REPO_NAME} --query 'imageDetails[?imageTags[?contains(@, `latest`) == `false`]].[imageDigest,imagePushedAt,imageTags[0]]' --output json | jq -r '.[] | "\(.[0])\t\(.[1])\t\(.[2])"' | sort -k2 | head -n -10 | cut -f1 | while read digest; do
+        echo "Deleting image: $digest"
+        aws ecr batch-delete-image --repository-name ${ECR_REPO_NAME} --image-ids imageDigest=$digest
+      done || echo "No old images to clean up"
+  
+  only:
+    - main
+    - develop
+  when: always 

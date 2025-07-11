@@ -1,0 +1,17 @@
+# Exclude everything except the c_code directory and Python files
+*
+!c_code/
+!lambda_function.py
+!requirements.txt
+
+# Within c_code, exclude git and other unnecessary files
+c_code/.git/
+c_code/*.tar
+c_code/*.shar
+c_code/times/
+c_code/t/
+c_code/asm/
+c_code/*.bak
+c_code/*.old
+c_code/core
+c_code/tags 
